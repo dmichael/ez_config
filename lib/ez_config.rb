@@ -28,7 +28,7 @@ class EzConfig
   end
 
   def [](k)
-    to_hash[k]
+    config(k)
   end
 
   def files
@@ -39,17 +39,25 @@ class EzConfig
     @env =~ @production_regex ? 'production' : 'non_production'
   end
 
-  def config
-    @config ||= files.inject({}) do |config, file|
-      key   = File.basename file, '.yml'
-      yaml  = YAML.load_file file
-      val   = yaml[@env] || yaml[default_env]
+  # Let's build this only for the config requested. 
+  # Eager loading the all the configs will barf when for instance you have a sidekiq.yml
+  # that does not conform to conventions, but all the rest do.
+  def config(key)
+    @config ||= {}
+    
+    file = File.join(@path, "#{key}.yml")
+    raise NoConfigForEnv, "File #{file} not found." unless File.exists?(file)
+    
+    return @config[key] unless @config[key].nil? ||   @config[key].empty?
+    # @config[key] ||= {}
+      
+    yaml  = YAML.load_file file
+    val   = yaml[@env] || yaml[default_env]
 
-      raise NoConfigForEnv, "Environment #{@env} not found in #{file}" unless val
+    raise NoConfigForEnv, "Environment #{@env} not found in #{file}" unless val
 
-      config[key] = val
-      config
-    end
+    @config[key] = val
+    @config[key]
   end
 
   alias :to_hash :config
