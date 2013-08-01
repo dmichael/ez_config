@@ -1,5 +1,8 @@
+require 'yaml'
+
 class EzConfig
   class NoConfigForEnv < StandardError; end
+  class BadConfig < StandardError; end
 
   PRODUCTION_REGEX  = /^production/
 
@@ -16,8 +19,8 @@ class EzConfig
       instance[k]
     end
 
-    def to_hash
-      instance.to_hash
+    def to_hash(key = nil)
+      instance.to_hash(key)
     end
   end
 
@@ -52,6 +55,8 @@ class EzConfig
     # @config[key] ||= {}
       
     yaml  = YAML.load_file file
+    raise BadConfig, "Bad YAML in #{file}" unless yaml
+
     val   = yaml[@env] || yaml[default_env]
 
     raise NoConfigForEnv, "Environment #{@env} not found in #{file}" unless val

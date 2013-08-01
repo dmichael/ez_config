@@ -36,6 +36,26 @@ describe EzConfig do
 
   it "should have to_hash" do
     EzConfig.configure :env => :test, :path => File.join(File.dirname(__FILE__), 'config')
-    EzConfig.to_hash.is_a?(Hash).should be_true
+    EzConfig.to_hash('foo').is_a?(Hash).should be_true
+  end
+
+  it "should tolerate bad configs in the folder" do
+    config = ez_config(:test)
+    config['foo'].should_not be_empty
+  end
+  
+  it "should raise an error for a config file not found" do
+    config = ez_config('test')
+    expect { config['foozie'] }.to raise_exception
+  end
+
+  it "should raise an error for bad YAML" do
+    config = ez_config(:test)
+    expect { config['bad'] }.to raise_error(EzConfig::BadConfig)
+  end
+
+  it "should raise an error for a missing env" do
+    # This is not yet the behavior as it falls back to the default
+    # should it do this?
   end
 end
